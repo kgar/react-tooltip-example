@@ -1,0 +1,11 @@
+- Finish coding up the most basic implementation, bottom only
+  - Make tooltip appear and disappear
+  - Add basic styling that can be overridden
+    - Consider BEM solution with a "Default" stylesheet
+- Add placement logic to help the tooltip stay in the viewport, with last resort being bottom with scroll.
+- Add option for preferred side, which will try the preferred side first
+- Add option to ignore viewport limitations, allowing the preferred side to persist even offscreen
+- Add ability to mouse onto the tooltip itself
+  - Use timeouts and careful placement of the tooltip's invisible overlay to prevent dismissal
+- Add showDelay option
+- Add hideDelay option
