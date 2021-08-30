@@ -9,3 +9,6 @@
   - Use timeouts and careful placement of the tooltip's invisible overlay to prevent dismissal
 - Add showDelay option
 - Add hideDelay option
+- Add aria-describedby to original element when the tooltip is visible
+  - Figure out how to make a unique id, preferably without having to pull in a library
+  - Check out: https://gist.github.com/gordonbrander/2230317
