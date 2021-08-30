@@ -8,8 +8,11 @@ function App() {
         <p
           title="This is the way"
           data-tooltip-template={<h1>THIS IS THE WAY</h1>}
+          style={{
+            background: 'linear-gradient(#e66465, #9198e5)',
+          }}
         >
-          This is a paragraph with a title and a tooltip template.
+          This is a paragraph with a title and a tooltip template. It also has its own styles. <em>Those styles had better be preserved! 👀</em>
         </p>
         <div>
           This is a cool div with{' '}
@@ -93,6 +96,7 @@ function TooltipTrigger({
   }
 
   return React.cloneElement(children, {
+    ...children.props,
     title: null,
     onMouseEnter: tooltipTriggerMouseEnter,
     onMouseLeave: tooltipTriggerMouseLeave,
