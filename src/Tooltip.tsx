@@ -1,10 +1,13 @@
 import React, {
+  createContext,
   createRef,
   PropsWithChildren,
+  useContext,
   useEffect,
+  useRef,
   useState,
-} from 'react';
-import { createPortal } from 'react-dom';
+} from "react";
+import { createPortal } from "react-dom";
 
 export function Tooltip(props: PropsWithChildren<unknown>) {
   function ProcessTitles(
@@ -27,7 +30,7 @@ export function Tooltip(props: PropsWithChildren<unknown>) {
       if (child.props?.title !== undefined) {
         return (
           <TooltipTrigger
-            title={child.props['data-tooltip-template'] ?? child.props.title}
+            title={child.props["data-tooltip-template"] ?? child.props.title}
             onMouseEnter={child.props.onMouseEnter}
             onMouseLeave={child.props.onMouseLeave}
             onMouseOver={child.props.onMouseOver}
@@ -38,7 +41,6 @@ export function Tooltip(props: PropsWithChildren<unknown>) {
       }
 
       if (child.props?.children !== undefined) {
-        // This is where it's happening...
         return React.cloneElement(child, {
           ...child.props,
           children: ProcessTitles(child.props),
@@ -48,6 +50,28 @@ export function Tooltip(props: PropsWithChildren<unknown>) {
   }
 
   return <>{ProcessTitles(props)}</>;
+}
+
+type TooltipTriggerContextProps =
+  | {
+      beginTooltipHide: () => void;
+      stopTooltipHide: () => void;
+    }
+  | undefined;
+
+const TooltipTriggerContext =
+  createContext<TooltipTriggerContextProps>(undefined);
+
+function useTooltipTriggerContext() {
+  const tooltipTriggerContext = useContext(TooltipTriggerContext);
+
+  if (!tooltipTriggerContext) {
+    throw new Error(
+      "TooltipTriggerContext.Provider is required in a parent component, and it must have a valid value."
+    );
+  }
+
+  return tooltipTriggerContext;
 }
 
 function TooltipTrigger({
@@ -66,20 +90,25 @@ function TooltipTrigger({
   onMouseOver?: (e: MouseEvent) => void;
 }) {
   const [showTooltip, setShowTooltip] = useState(false);
-  const childRef = createRef<HTMLElement>();
   const [targetRect, setTargetRect] = useState<DOMRect | undefined>();
+  const hideTimer = useRef<number | undefined>();
+  const childRef = createRef<HTMLElement>();
 
-  function tooltipTriggerMouseOver(e: MouseEvent) {
+  function handleMouseOver(e: MouseEvent) {
+    onMouseOver?.(e);
+
     if (showTooltip) {
+      stopTooltipHide();
       return;
     }
 
-    tooltipTriggerMouseEnter(e);
+    handleMouseEnter(e);
   }
 
-  function tooltipTriggerMouseEnter(e: MouseEvent) {
+  function handleMouseEnter(e: MouseEvent) {
     onMouseEnter?.(e);
 
+    stopTooltipHide();
     const currentChild = childRef.current;
 
     if (!currentChild?.getBoundingClientRect) {
@@ -91,21 +120,32 @@ function TooltipTrigger({
     setShowTooltip(true);
   }
 
-  function tooltipTriggerMouseLeave(e: MouseEvent) {
+  const stopTooltipHide = () => {
+    clearTimeout(hideTimer.current);
+  };
+
+  const beginTooltipHide = () => {
+    stopTooltipHide();
+    hideTimer.current = setTimeout(() => setShowTooltip(false), 250);
+  };
+
+  function handleMouseLeave(e: MouseEvent) {
     onMouseLeave?.(e);
-    setShowTooltip(false);
+    beginTooltipHide();
   }
 
   return (
-    <>
+    <TooltipTriggerContext.Provider
+      value={{ beginTooltipHide, stopTooltipHide }}
+    >
       {React.cloneElement(children, {
         ...children.props,
         title: null,
-        onMouseEnter: tooltipTriggerMouseEnter,
-        onMouseLeave: tooltipTriggerMouseLeave,
-        onMouseOver: showTooltip ? onMouseOver : tooltipTriggerMouseOver,
+        onMouseEnter: handleMouseEnter,
+        onMouseLeave: handleMouseLeave,
+        onMouseOver: showTooltip ? onMouseOver : handleMouseOver,
         ref: childRef,
-        ['data-tooltip-template']: null,
+        ["data-tooltip-template"]: null,
       })}
       {showTooltip
         ? createPortal(
@@ -113,17 +153,20 @@ function TooltipTrigger({
             document.body
           )
         : null}
-    </>
+    </TooltipTriggerContext.Provider>
   );
 }
 
-function TooltipBody({
-  targetRect,
-  children,
-}: PropsWithChildren<{ targetRect: DOMRect | undefined }>) {
+type TooltipBodyProps = PropsWithChildren<{
+  targetRect: DOMRect | undefined;
+}>;
+
+function TooltipBody({ targetRect, children }: TooltipBodyProps) {
   const [left, setLeft] = useState(0);
   const [top, setTop] = useState(0);
+  const [opacity, setOpacity] = useState(0);
   const ref = createRef<HTMLDivElement>();
+  const { beginTooltipHide, stopTooltipHide } = useTooltipTriggerContext();
 
   useEffect(() => {
     if (!targetRect || !ref.current) {
@@ -137,15 +180,21 @@ function TooltipBody({
     const targetMidpointX = targetRect.x + targetRect.width / 2;
     const newLeft = Math.max(0, targetMidpointX - tooltipRect.width / 2);
     setLeft(newLeft);
+
+    setOpacity(1);
   }, [targetRect]);
 
   return (
     <div
-      className="tooltip overlay"
+      className="tooltip"
       style={{
         top: `${top}px`,
         left: `${left}px`,
+        opacity: opacity,
+        transition: "opacity 50ms ease-in",
       }}
+      onMouseEnter={() => stopTooltipHide()}
+      onMouseLeave={() => beginTooltipHide()}
       ref={ref}
     >
       <div className="tooltip__arrow bottom"></div>

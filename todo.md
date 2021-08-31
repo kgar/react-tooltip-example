@@ -1,11 +1,12 @@
-- Prevent tooltip body opacity from being 1 until left and top are calculated.
-- Add placement logic to help the tooltip stay in the viewport, with last resort being bottom with scroll.
+- Add placement logic to help the tooltip stay in the viewport.
 - Add option for preferred side, which will try the preferred side first
 - Add option to ignore viewport limitations, allowing the preferred side to persist even offscreen
-- Add ability to mouse onto the tooltip itself
-  - Use timeouts and careful placement of the tooltip's invisible overlay to prevent dismissal
 - Add showDelay option
 - Add hideDelay option
 - Add aria-describedby to original element when the tooltip is visible
   - Figure out how to make a unique id, preferably without having to pull in a library
   - Check out: https://gist.github.com/gordonbrander/2230317
+- Prevent tooltip component from delving into other tooltip components.
+- Parameterize show/hide animation
+- Review todo comments
+- Get on that readme?
